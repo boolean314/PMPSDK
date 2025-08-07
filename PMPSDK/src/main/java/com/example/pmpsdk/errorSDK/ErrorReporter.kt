@@ -36,6 +36,7 @@ class ErrorReporter constructor(private val config: SDKConfig) {
                 put("projectId", config.projectId)
                 put("platform", "android")
                 put("timestamp", System.currentTimeMillis())
+                put("type","error")
                 put("message", throwable.message ?: "Unknown error")
                 put("stack", getStackTraceString(throwable))
                 put("className", throwable.javaClass.name)

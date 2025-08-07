@@ -19,6 +19,7 @@ data class ErrorInfo(
     val projectId: String,
     val platform: String = "android",
     val timestamp: Long = System.currentTimeMillis(),
+    val type: String = "error",
     val message: String,
     val stack: String,
     val className: String,

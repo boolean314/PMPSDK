@@ -17,7 +17,7 @@
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        MonitorSDK.init(this, "PROJ-123", "https://monitor.yourplatform.com/api")	//注意不要输入多的空格哦
+        MonitorSDK.initA(this, "PROJ-123", "https://monitor.yourplatform.com/api")	//注意不要输入多的空格哦
         MonitorSDK.enable() //启用SDK
     }
 }
@@ -47,3 +47,12 @@ MonitorSDK.enable()   //启用SDK
 MonitorSDK.disable()    //禁用SDK
 MonitorSDK.reportError(throwable: Throwable, errorType: String = "manual_report")   //手动上报异常
 ```
+
+```mermaid
+graph LR
+	A(AAA)-->B(123)
+	A-->C
+```
+
+
+
