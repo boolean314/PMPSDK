@@ -34,7 +34,11 @@ android {
 
 dependencies {
 
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
+    implementation ("androidx.viewpager2:viewpager2:1.1.0")
+    implementation(libs.extension.okhttp)
     implementation(libs.appcompat.v7)
+    implementation(libs.androidx.recyclerview)
     testImplementation(libs.junit)
     androidTestImplementation(libs.runner)
     androidTestImplementation(libs.espresso.core)
