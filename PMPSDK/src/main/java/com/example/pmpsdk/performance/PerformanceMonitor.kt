@@ -1,56 +1,58 @@
-package com.example.pmpsdk.performance
+package com.example.mylibrary
 
-import android.app.Activity
-import android.arch.lifecycle.LifecycleObserver
 import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Debug
-import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.Choreographer
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
-import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.DefaultLifecycleObserver
-
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
-import com.example.pmpsdk.webSocket.webSocketListener
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.WebSocket
+import com.example.pmpsdk.performance.SdkService
 import org.json.JSONObject
-import java.net.URL
-import java.util.concurrent.TimeUnit
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
+
+
 
 object PerformanceMonitor {
     private var lastFrameTimeNanos = 0L
+    private var lastFrameLongTimeNanos = 0L
     private var frameCount = 0
+    private var frameLongCount = 0
     private var frameCallback: Choreographer.FrameCallback? = null
-    private var intervalFrameCallback: Choreographer.FrameCallback? = null
+    private var frameLongCallback: Choreographer.FrameCallback? = null
     private var operationFps = 0.0
     private var isMonitoring = false
+    private var isLongMonitoring = false
     private val model = Build.MODEL
     private val OS = Build.VERSION.RELEASE
-    private lateinit var webSocket: WebSocket
     private var projectId = "123"//需要初始化，暂时赋值为123
     private lateinit var viewResourceId: String
     private  var isMonitor:Boolean=true
-
+    private  var url:String=""
+    private lateinit var appService: SdkService
     fun initPerformanceMonitor(projectId: String, url: String,isMonitor: Boolean=true) {
         if(isMonitor){
             this.projectId = projectId
-            val client = OkHttpClient.Builder().pingInterval(30, TimeUnit.SECONDS).build()
-            val request = Request.Builder().url(url).build()
-            val listener = webSocketListener()
-            webSocket = client.newWebSocket(request, listener)
+            this.url=url
+            val retrofit=Retrofit.Builder()
+                .baseUrl("https://httpbin.org/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+            appService=retrofit.create(SdkService::class.java)
         }else{
-            this.isMonitor=isMonitor
             return
         }
+
 
 
     }
@@ -79,7 +81,7 @@ object PerformanceMonitor {
                 .put("data", dataJson)
 
         }
-        webSocket.send(json.toString())
+        // appService.sendPerformanceData(url, dataJson)
         Log.d("PerformanceMonitor", "sendPerformanceData: $json")
     }
 
@@ -143,6 +145,31 @@ object PerformanceMonitor {
     }
 
 
+    //开始对长时间的事件进行监控
+    private fun startLongMonitoring() {
+        if (isLongMonitoring) {
+            return
+        }
+
+        isLongMonitoring = true
+        // 开始FPS监控逻辑
+        frameLongCount = 0
+        lastFrameLongTimeNanos = System.nanoTime()
+        // 注册Choreographer回调等
+
+        frameLongCallback = object : Choreographer.FrameCallback {
+            override fun doFrame(frameTimeNanos: Long) {
+                if (isLongMonitoring) {
+                    frameLongCount++
+                    Choreographer.getInstance().postFrameCallback(this)
+                }
+            }
+        }
+
+        Choreographer.getInstance().postFrameCallback(frameLongCallback!!)
+    }
+
+
     //停止监控
     private fun stopMonitoring(view: View) {
         if (!isMonitoring) {
@@ -163,6 +190,38 @@ object PerformanceMonitor {
             frameCount / durationSeconds
         } else 0.0
         viewResourceId = getViewIdentifier(view)
+        sendPerformanceData(view.context)
+    }
+
+
+
+    //停止对长时间事件的监控
+    private fun stopLongMonitoring(view: View,activityName:String?=null) {
+        if (!isLongMonitoring) {
+            return
+        }
+        isLongMonitoring = false
+        // 停止Choreographer回调
+        frameLongCallback?.let {
+            Choreographer.getInstance().removeFrameCallback(it)
+        }
+        frameLongCallback = null
+
+        // 停止FPS监控并计算结果
+        // 计算FPS
+        val durationNanos = System.nanoTime() - lastFrameLongTimeNanos
+        val durationSeconds = durationNanos / 1_000_000_000.0
+        operationFps = if (durationSeconds > 0) {
+            frameLongCount / durationSeconds
+        } else 0.0
+
+
+        if (activityName==null){
+            viewResourceId = getViewIdentifier(view)
+        }else{
+            viewResourceId=activityName
+        }
+
         sendPerformanceData(view.context)
     }
 
@@ -210,7 +269,14 @@ object PerformanceMonitor {
             result
         }
     }
-
+    /* 使用方式
+    button.setOnLongClickListener(
+    PerformanceMonitor.wrapLongClickListener { v ->
+        // 长按处理逻辑
+        Toast.makeText(v.context, "长按了按钮", Toast.LENGTH_SHORT).show()
+        true // 返回true表示消费了长按事件
+    }
+    )*/
 
 
 
@@ -286,21 +352,57 @@ object PerformanceMonitor {
         })
     }
 
-
-    //监控碎片创建时的性能
+    //监控碎片创建到销毁时的性能
     fun wrapFragmentLifecycleCallbacks(fragment: androidx.fragment.app.Fragment) {
         fragment.lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onCreate(owner: LifecycleOwner) {
-                startMonitoring()
+            override fun onResume(owner: LifecycleOwner) {
+                startLongMonitoring()
             }
 
-            override fun onDestroy(owner: LifecycleOwner) {
-                stopMonitoring(fragment.view!!)
+            // 重写onPause方法，当生命周期所有者暂停时调用
+            override fun onPause(owner: LifecycleOwner) {
+                // 停止长时间监控fragment的视图
+                stopLongMonitoring(fragment.requireView(),fragment.javaClass.simpleName)
             }
 
 
         })
     }
+    /* class MyFragment : Fragment() {
+         override fun onCreate(savedInstanceState: Bundle?) {
+             super.onCreate(savedInstanceState)
 
+             // 在Fragment中调用此方法来监控性能
+             PerformanceMonitor.wrapFragmentLifecycleCallbacks(this)
+         }
+
+         // ... 其他Fragment代码
+     }
+ */
+
+    //监控活动从创建到销毁时的性能
+    fun wrapActivityLifecycleCallbacks(activity: AppCompatActivity) {
+        activity.lifecycle.addObserver(object : DefaultLifecycleObserver,LifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                Log.d("PerformanceMonitor", "执行开始监控")
+                startLongMonitoring()
+            }
+            override fun onPause(owner: LifecycleOwner) {
+                Log.d("PerformanceMonitor", "执行结束监控")
+                stopLongMonitoring(activity.window.decorView,activity.javaClass.simpleName)
+            }
+        })
+    }
+    /* override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
+         binding = ActivityMainBinding.inflate(layoutInflater)
+         setContentView(binding.root)
+
+         // 监控Activity生命周期性能
+         PerformanceMonitor.wrapActivityLifecycleCallbacks(this)
+
+         // 其他初始化代码...
+         setupViews()
+     }*/
 
 }
