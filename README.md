@@ -1,6 +1,8 @@
 # PMPSDK
 
-基于Handler机制和UncaughtExceptionHandler实现的Android异常监控SDK。
+1.基于Handler机制和UncaughtExceptionHandler实现的Android异常监控SDK。
+
+2.可根据需求对特定操作的性能进行采集，指示应用运行效率，提供优化方向。
 
 ## 一、异常上报
 
@@ -48,11 +50,7 @@ MonitorSDK.disable()    //禁用SDK
 MonitorSDK.reportError(throwable: Throwable, errorType: String = "manual_report")   //手动上报异常
 ```
 
-```mermaid
-graph LR
-	A(AAA)-->B(123)
-	A-->C
-```
 
 
+## 二.性能数据采集
 
