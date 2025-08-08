@@ -42,13 +42,13 @@ android {
 
 dependencies {
 
-    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
-    implementation ("androidx.viewpager2:viewpager2:1.1.0")
-    implementation(libs.extension.okhttp)
+   api ("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
+    api ("androidx.viewpager2:viewpager2:1.1.0")
+    api(libs.extension.okhttp)
     implementation(libs.appcompat.v7)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.recyclerview)
+   api(libs.androidx.recyclerview)
     testImplementation(libs.junit)
     androidTestImplementation(libs.runner)
     androidTestImplementation(libs.espresso.core)
@@ -66,7 +66,7 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = "com.github.boolean314"
             artifactId = "PMPSDK"
-            version = "1.1.0"
+            version = "1.2.0"
             afterEvaluate {
                 from(components["release"])
             }

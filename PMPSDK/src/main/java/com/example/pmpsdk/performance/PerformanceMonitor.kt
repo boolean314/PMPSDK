@@ -16,7 +16,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.example.pmpsdk.performance.SdkService
+import okhttp3.ResponseBody
 import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -66,22 +69,30 @@ object PerformanceMonitor {
             put("usedMemory", "${getMemoryInfo().usedMemory}MB")
             put("totalMemory", "${getMemoryInfo().totalMemory}MB")
         }
-        val dataJson = JSONObject().apply {
-            put("device_model", model)
-            put("os_version", "Android $OS")
-            put("battery_level", "${getBatteryLevel(context)}%")
-            put("memory_usage", memoryInfo)
-            put("operation_fps", "${viewResourceId}:$operationFps")
-        }
+
         val json = JSONObject().apply {
             put("project_id", projectId)
             put("platform", "android")
             put("type", "performance")
             put("timestamp", System.currentTimeMillis())
-                .put("data", dataJson)
+            put("device_model", model)
+            put("os_version", "Android $OS")
+            put("battery_level", "${getBatteryLevel(context)}%")
+            put("memory_usage", memoryInfo)
+            put("operation_fps", "${viewResourceId}:$operationFps")
 
         }
-        appService.sendPerformanceData(url, json)
+        // 异步执行网络请求
+        appService.sendPerformanceData(url, json).enqueue(object : retrofit2.Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                Log.d("PerformanceMonitor", "Data sent successfully. Response code: ${response.code()}")
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                Log.e("PerformanceMonitor", "Failed to send data", t)
+            }
+        })
+
         Log.d("PerformanceMonitor", "sendPerformanceData: $json")
     }
 
