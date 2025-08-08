@@ -33,10 +33,6 @@ android {
         jvmTarget = "11"
     }
 
-    buildFeatures {
-        viewBinding = true
-    }
-
 
 }
 
@@ -66,7 +62,7 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = "com.github.boolean314"
             artifactId = "PMPSDK"
-            version = "1.2.0"
+            version = "1.4.0"
             afterEvaluate {
                 from(components["release"])
             }
