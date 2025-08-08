@@ -55,11 +55,11 @@ dependencies {
     //异常上报使用的依赖
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    api("com.squareup.retrofit2:retrofit:2.9.0")
+    api("com.squareup.retrofit2:converter-gson:2.9.0")
+    api("com.google.code.gson:gson:2.10.1")
+    api("com.squareup.okhttp3:okhttp:4.11.0")
+    api("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }
 publishing {
     publications {
