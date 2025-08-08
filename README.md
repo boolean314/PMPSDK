@@ -54,3 +54,147 @@ MonitorSDK.reportError(throwable: Throwable, errorType: String = "manual_report"
 
 ## 二.性能数据采集
 
+### API参考
+
+| function                                                     | 功能                         |
+| :----------------------------------------------------------- | :--------------------------- |
+| **initPerformanceMonitor**(projectId: String, url: String,isMonitor: Boolean=true) | 初始化性能监控               |
+| **wrapClickListener**(listener: (View) -> Unit): (View)      | 监测执行点击事件的性能       |
+| **wrapLongClickListener**(listener: (View) -> Boolean): (View) | 监测执行长按事件的性能       |
+| **wrapScrollViewListener**(scrollView: ScrollView)           | 监测ScrollView滚动的性能     |
+| **wrapRecyclerViewListener**(recyclerView: RecyclerView)     | 监测RecyclerView滚动的性能   |
+| **wrapPageChangeListener**(viewPager: ViewPager2)            | 监测页面跳转的性能           |
+| **wrapFragmentLifecycleCallbacks**(fragment: androidx.fragment.app.Fragment) | 监测碎片创建到销毁时的性能   |
+| **wrapActivityLifecycleCallbacks**(activity: AppCompatActivity） | 监测活动从创建到销毁时的性能 |
+
+### 性能数据JSON示例
+
+```json
+{
+	"project id":"PROJ-XXXXXX",
+	"platform":"android",
+	"type":"performance",
+	"timestamp": 1620000000000,
+    "data":{
+   		 "device_model":"sdk gphone64 x86 64",
+   		 "os_version":"Android 13",
+   		 "battery_level":"100%",
+   		 "memory_usage":{
+    		"usedMemory":"6MB",
+    		"totalMemory":"47MB"
+						},
+    "operation_fps":"btn:55.56639307648892'
+			}
+}
+```
+
+### 调用示例
+
+* **initPerformanceMonitor**(projectId: String, url: String,isMonitor: Boolean=true)
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        ...
+        PerformanceMonitor.initPerformanceMonitor("PROJ-123","https://monitor.yourplatform.com/api")//如果要关闭监控功能，再传入第三个参数为false
+        ...
+        }
+```
+
+
+
+* **wrapClickListener**(listener: (View) -> Unit): (View)
+
+  ```kotlin
+  //监控按钮的点击事件
+  binding.yourButtonId.setOnClickListener(
+      PerformanceMonitor.wrapClickListener { 
+      //你的点击事件逻辑
+          ...
+      }
+  )
+  
+  
+  //监控列表子项的点击事件
+  //在Adapter中
+   override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+       ...
+          holder.itemView.setOnClickListener(
+              PerformanceMonitor.wrapClickListener {
+                 //你的点击事件逻辑
+              }
+          )
+      }	
+  ```
+
+
+
+* **wrapLongClickListener**(listener: (View) -> Boolean): (View)
+
+  ```kotlin
+  binding.yourButtonId.setOnLongClickListener(
+  PerformanceMonitor.wrapLongClickListener { 
+      // 长按处理逻辑
+   ...
+      true // 返回true表示消费了长按事件
+  }
+  )
+  ```
+
+
+
+* **wrapScrollViewListener**(scrollView: ScrollView)
+
+  ```kotlin
+  PerformanceMonitor.wrapScrollViewListener(binding.yourScrollViewId)
+  ```
+
+
+
+* **wrapRecyclerViewListener**(recyclerView: RecyclerView)
+
+  ```kotlin
+  PerformanceMonitor.wrapRecyclerViewListener(binding.yourRecyclerViewId)
+  ```
+
+
+
+* **wrapPageChangeListener**(viewPager: ViewPager2)
+
+  ```kotlin
+  PerformanceMonitor.wrapPageChangeListener(binding.yourViewPagerId)
+  ```
+
+
+
+* **wrapFragmentLifecycleCallbacks**(fragment: androidx.fragment.app.Fragment)
+
+  ```kotlin
+  class MyFragment : Fragment() {
+       override fun onCreate(savedInstanceState: Bundle?) {
+           super.onCreate(savedInstanceState)
+           // 在Fragment中调用此方法来监控性能
+           PerformanceMonitor.wrapFragmentLifecycleCallbacks(this)
+       }
+      // ... 其他Fragment代码
+   }
+  ```
+
+
+
+* **wrapActivityLifecycleCallbacks**(activity: AppCompatActivity）
+
+```kotlin
+ class YourActivity : AppCompatActivity(){
+ override fun onCreate(savedInstanceState: Bundle?) {
+     super.onCreate(savedInstanceState)
+     binding = ActivityMainBinding.inflate(layoutInflater)
+     setContentView(binding.root)
+     // 在Activity中调用此方法来监控性能
+     PerformanceMonitor.wrapActivityLifecycleCallbacks(this)
+
+     // 其他初始化代码...
+ }
+ }
+```

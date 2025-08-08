@@ -81,7 +81,7 @@ object PerformanceMonitor {
                 .put("data", dataJson)
 
         }
-        // appService.sendPerformanceData(url, dataJson)
+        appService.sendPerformanceData(url, json)
         Log.d("PerformanceMonitor", "sendPerformanceData: $json")
     }
 
@@ -404,5 +404,6 @@ object PerformanceMonitor {
          // 其他初始化代码...
          setupViews()
      }*/
+    
 
 }
