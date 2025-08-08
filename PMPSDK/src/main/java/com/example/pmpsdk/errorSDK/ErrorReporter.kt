@@ -9,6 +9,7 @@ import java.util.concurrent.Executors
 class ErrorReporter constructor(private val config: SDKConfig) {
     companion object {
         private const val TAG = "ErrorReporter"
+        private const val MAX_STACK_TRACE_LENGTH = 30000
     }
 
     private val executor = Executors.newCachedThreadPool()  //线程池用于异步上报
@@ -32,7 +33,6 @@ class ErrorReporter constructor(private val config: SDKConfig) {
 
     private fun generateErrorData(throwable: Throwable, errorType: String): String {
         val data = JSONObject().apply {
-            put("error", JSONObject().apply {
                 put("projectId", config.projectId)
                 put("platform", "android")
                 put("timestamp", System.currentTimeMillis())
@@ -41,16 +41,29 @@ class ErrorReporter constructor(private val config: SDKConfig) {
                 put("stack", getStackTraceString(throwable))
                 put("className", throwable.javaClass.name)
                 put("errorType", errorType)
-            })
         }
         return data.toString(2)
     }
 
+
     private fun getStackTraceString(throwable: Throwable): String { //获取异常堆栈信息
         val sw = StringWriter()
-        val pw = PrintWriter(sw)
-        throwable.printStackTrace(pw)
-        return sw.toString()
+        throwable.printStackTrace(PrintWriter(sw))
+        val fullStackTrace = sw.toString()
+        val atIndex = fullStackTrace.indexOf("\tat ")
+        if (atIndex != -1) {
+            //寻找该行末尾的换行符
+            val endOfLineIndex = fullStackTrace.indexOf('\n', atIndex)
+            if (endOfLineIndex != -1) {
+                //提取从"at "之后到行尾的内容
+                return fullStackTrace.substring(atIndex + 4, endOfLineIndex)
+            } else {
+                //如果没有换行符，提取到字符串末尾
+                return fullStackTrace.substring(atIndex + 4)
+            }
+        }
+        // 如果找不到 "at "，返回异常消息作为备用
+        return throwable.message ?: "No stack trace available"
     }
 
     private fun sendViaHttp(data: String) {

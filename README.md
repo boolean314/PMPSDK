@@ -4,6 +4,28 @@
 
 2.可根据需求对特定操作的性能进行采集，指示应用运行效率，提供优化方向。
 
+# 注意！
+
+* 使用前在请在Module级的build.gradle.kts文件下导入依赖
+
+```kotlin
+implementation("com,github.boolean314:PMPSDK:v1.1.0")
+```
+
+* 在settings.gradle.kts文件中添加链接
+
+```kotlin
+dependencyResolutionManagement {
+    ...
+        maven {
+            url = uri("https://jitpack.io")
+        }
+    ...
+}
+```
+
+**祝你使用愉快~**
+
 ## 一、异常上报
 
 ### 核心特性
@@ -29,7 +51,6 @@ class MyApplication : Application() {
 
 ```json
 {
-    "error": {
       "projectId": "PROJ-XXXXXX",
       "platform": "android",
       "timestamp": 1620000000000,
@@ -37,7 +58,6 @@ class MyApplication : Application() {
       "stack": "at com.example.Service.run(Service.java:42)...",
       "className": "java.lang.NullPointerException",
       "errorType": "NullPointerException"
-    }
 }
 ```
 

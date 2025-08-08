@@ -8,12 +8,8 @@ import retrofit2.http.Url
 
 interface ErrorReportApi {
     @POST
-    fun reportError(@Url fullUrl: String, @Body errorReport: ErrorReportData): Call<ErrorReportResponse>
+    fun reportError(@Url fullUrl: String, @Body errorReport: ErrorInfo): Call<ErrorReportResponse>
 }
-
-data class ErrorReportData(
-    val error: ErrorInfo
-)
 
 data class ErrorInfo(
     val projectId: String,

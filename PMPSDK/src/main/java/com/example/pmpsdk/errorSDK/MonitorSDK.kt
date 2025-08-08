@@ -5,7 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
-import com.example.pmpsdk.errorSDK.FriendlyActivity
+import android.util.Log
+import android.widget.Toast
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -36,7 +37,6 @@ object MonitorSDK {
         if (!isInitialized.get() || isEnabled.getAndSet(true)) return
         config?.let { cfg ->
             if (cfg.enableGlobalExceptionHandler) setupGlobalExceptionHandler()
-            if (cfg.enableChildThreadMonitoring) setupChildThreadMonitoring()
         }
     }
 
@@ -51,33 +51,6 @@ object MonitorSDK {
         Thread.setDefaultUncaughtExceptionHandler(CustomUncaughtExceptionHandler())
     }
 
-    private fun setupChildThreadMonitoring() {
-        val originalThreadGroup = Thread.currentThread().threadGroup    //通过ThreadGroup监控子线程异常
-        val monitoredThreadGroup = object : ThreadGroup(originalThreadGroup, "PMP_Monitored") {
-            override fun uncaughtException(t: Thread, e: Throwable) {
-                handleException(e, "child_thread_exception")
-                super.uncaughtException(t, e)
-            }
-        }
-    }
-
-    private fun showUserFriendlyMessage() {
-        config?.let { cfg ->
-            if (cfg.showUserFriendlyMessage) {
-                context?.let { ctx ->
-                    Handler(Looper.getMainLooper()).post {
-                        try {
-                            val intent = Intent(ctx, FriendlyActivity::class.java)
-                            intent.putExtra("message", cfg.userFriendlyMessage)
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) //确保可以跨应用启动
-                            ctx.startActivity(intent)
-                        } catch (_: Exception) {}
-                    }
-                }
-            }
-        }
-    }
-
     private fun restoreOriginalHandlers() {
         originalUncaughtExceptionHandler?.let {
             Thread.setDefaultUncaughtExceptionHandler(it)
@@ -87,13 +60,33 @@ object MonitorSDK {
     private class CustomUncaughtExceptionHandler : Thread.UncaughtExceptionHandler {
         override fun uncaughtException(thread: Thread, ex: Throwable) {
             val errorType = determineErrorType(ex)
-            handleException(ex, errorType)
-            if (hasExceptionOccurred.getAndSet(true)) {
-                return
+            errorReporter?.reportError(ex, errorType)
+            showToastMessage()
+            if (thread == Looper.getMainLooper().thread) {
+                Log.i(TAG, "主线程异常，进入保活循环。")
+                while (true) {
+                    try {
+                        Looper.loop()
+                    } catch (e: Throwable) {
+                        Log.e(TAG, "在保活循环中捕获到新的异常。", e)
+                        val subsequentErrorType = determineErrorType(e)
+                        errorReporter?.reportError(e, subsequentErrorType)
+                        showToastMessage()
+                    }
+                }
+            } else {
+                Log.i(TAG, "子线程 ${thread.name} 捕获到异常，线程将终止。")
             }
-            try {
-                showUserFriendlyMessage()
-            } catch (_: Exception) {}
+        }
+    }
+
+    private fun showToastMessage() {
+        config?.let { cfg ->
+            context?.let { ctx ->
+                Handler(Looper.getMainLooper()).post {
+                    Toast.makeText(ctx, cfg.userFriendlyMessage, Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
@@ -113,11 +106,6 @@ object MonitorSDK {
             is RuntimeException -> "runtime_exception"
             else -> "uncaught_exception"
         }
-    }
-
-    private fun handleException(throwable: Throwable, errorType: String) {
-        showUserFriendlyMessage()
-        errorReporter?.reportError(throwable, errorType)
     }
 
     fun reportError(
