@@ -51,12 +51,12 @@ class RetrofitReporter(private val config: SDKConfig) {
             return false
         }
         try {
-            val errorReportData = parseJsonData(jsonData)   //解析JSON数据到ErrorReportData对象
-            if (errorReportData == null) {
+            val errorInfo= parseJsonData(jsonData)   //解析JSON数据到ErrorReportData对象
+            if (errorInfo== null) {
                 Log.e(TAG, "解析JSON数据失败")
                 return false
             }
-            val call = errorReportApi.reportError(config.apiUrl, errorReportData)   //创建API调用
+            val call = errorReportApi.reportError(config.apiUrl, errorInfo)   //创建API调用
             call.enqueue(object : Callback<ErrorReportResponse> {   //执行异步请求
                 override fun onResponse(call: Call<ErrorReportResponse>, response: Response<ErrorReportResponse>) {
                     if (response.isSuccessful) {
@@ -79,9 +79,9 @@ class RetrofitReporter(private val config: SDKConfig) {
         }
     }
 
-    private fun parseJsonData(jsonData: String): ErrorReportData? {
+    private fun parseJsonData(jsonData: String): ErrorInfo? {
         return try {
-            gson.fromJson(jsonData, ErrorReportData::class.java)
+            gson.fromJson(jsonData, ErrorInfo::class.java)
         } catch (e: Exception) {
             Log.e(TAG, "使用GSON解析JSON失败: ${e.message}")
             null
