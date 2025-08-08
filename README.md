@@ -24,12 +24,6 @@ dependencyResolutionManagement {
 }
 ```
 
-* 在gradle.properties文件中加上
-
-```kotlin
-android.enableJetifier=true
-```
-
 **祝你使用愉快~**
 
 ## 一、异常上报
