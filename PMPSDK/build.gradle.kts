@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    `maven-publish`
 }
 
 android {
@@ -13,6 +14,7 @@ android {
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
+
 
     buildTypes {
         release {
@@ -34,6 +36,8 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+
 }
 
 dependencies {
@@ -56,4 +60,16 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+}
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "com.github.boolean314"
+            artifactId = "PMPSDK"
+            version = "1.1.0"
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
