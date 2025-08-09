@@ -5,6 +5,9 @@ import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Url
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 interface ErrorReportApi {
     @POST
@@ -14,7 +17,7 @@ interface ErrorReportApi {
 data class ErrorInfo(
     val projectId: String,
     val platform: String = "android",
-    val timestamp: Long = System.currentTimeMillis(),
+    val timestamp: String = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
     val type: String = "error",
     val message: String,
     val stack: String,

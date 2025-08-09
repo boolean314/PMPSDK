@@ -4,6 +4,9 @@ import android.util.Log
 import org.json.JSONObject
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.Executors
 
 class ErrorReporter constructor(private val config: SDKConfig) {
@@ -19,7 +22,7 @@ class ErrorReporter constructor(private val config: SDKConfig) {
     fun reportError(throwable: Throwable, errorType: String) {
         if (!config.enableErrorReporting) {
             Log.d(TAG, "错误上报已禁用")
-            return
+        return
         }
         executor.execute {
             try {
@@ -35,7 +38,7 @@ class ErrorReporter constructor(private val config: SDKConfig) {
         val data = JSONObject().apply {
                 put("projectId", config.projectId)
                 put("platform", "android")
-                put("timestamp", System.currentTimeMillis())
+                put("timestamp", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
                 put("type","error")
                 put("message", throwable.message ?: "Unknown error")
                 put("stack", getStackTraceString(throwable))
