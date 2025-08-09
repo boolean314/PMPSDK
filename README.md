@@ -9,7 +9,7 @@
 * 使用前在请在Module级的build.gradle.kts文件下导入依赖
 
 ```kotlin
-implementation("com,github.boolean314:PMPSDK:v1.1.0")
+implementation("com,github.boolean314:PMPSDK:v1.4.0")	//记得填入最新的release版本号
 ```
 
 * 在settings.gradle.kts文件中添加链接
@@ -22,6 +22,12 @@ dependencyResolutionManagement {
         }
     ...
 }
+```
+
+* 在gradle.properties文件中添加
+
+```kotlin
+android.enableJetifier=true
 ```
 
 **祝你使用愉快~**
@@ -53,7 +59,8 @@ class MyApplication : Application() {
 {
       "projectId": "PROJ-XXXXXX",
       "platform": "android",
-      "timestamp": 1620000000000,
+      "timestamp": "2025-08-09 16:36:20",
+      "type": "error",
       "message": "error message",
       "stack": "at com.example.Service.run(Service.java:42)...",
       "className": "java.lang.NullPointerException",
@@ -94,7 +101,7 @@ MonitorSDK.reportError(throwable: Throwable, errorType: String = "manual_report"
 	"project id":"PROJ-XXXXXX",
 	"platform":"android",
 	"type":"performance",
-	"timestamp": 1620000000000,
+	"timestamp": "2025-08-09 16:36:20",
     "data":{
    		 "device_model":"sdk gphone64 x86 64",
    		 "os_version":"Android 13",
