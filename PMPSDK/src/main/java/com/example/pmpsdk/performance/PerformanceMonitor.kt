@@ -15,6 +15,7 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
+import com.example.mylibrary.PerformanceMonitor.sendPerformanceData
 import com.example.pmpsdk.performance.SdkService
 import okhttp3.ResponseBody
 import org.json.JSONObject
@@ -22,8 +23,9 @@ import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-
-
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 object PerformanceMonitor {
@@ -59,31 +61,50 @@ object PerformanceMonitor {
 
 
     }
+    // 性能数据主类
+    data class PerformanceData(
+        val project_id: String,
+        val platform: String,
+        val type: String,
+        val timestamp: String,
+        val device_model: String,
+        val os_version: String,
+        val battery_level: String,
+        val memory_usage: MemoryUsage,
+        val operation_fps: String
+    )
+
+    // 内存使用信息
+    data class MemoryUsage(
+        val usedMemory: String,
+        val totalMemory: String
+    )
 
 
     fun sendPerformanceData(context: Context) {
         if (!isMonitor){
             return
         }
-        val memoryInfo = JSONObject().apply {
-            put("usedMemory", "${getMemoryInfo().usedMemory}MB")
-            put("totalMemory", "${getMemoryInfo().totalMemory}MB")
-        }
+        val memoryInfo = MemoryUsage(
+            usedMemory = "${getMemoryInfo().usedMemory}MB",
+            totalMemory = "${getMemoryInfo().totalMemory}MB"
+        )
 
-        val json = JSONObject().apply {
-            put("project_id", projectId)
-            put("platform", "android")
-            put("type", "performance")
-            put("timestamp", System.currentTimeMillis())
-            put("device_model", model)
-            put("os_version", "Android $OS")
-            put("battery_level", "${getBatteryLevel(context)}%")
-            put("memory_usage", memoryInfo)
-            put("operation_fps", "${viewResourceId}:$operationFps")
 
-        }
+
+        val performanceData = PerformanceData(
+            project_id = projectId,
+            platform = "android",
+            type = "performance",
+            timestamp =  SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+            device_model = model,
+            os_version = "Android $OS",
+            battery_level = "${getBatteryLevel(context)}%",
+            memory_usage = memoryInfo,
+            operation_fps = "${viewResourceId}:$operationFps"
+        )
         // 异步执行网络请求
-        appService.sendPerformanceData(url, json).enqueue(object : retrofit2.Callback<ResponseBody> {
+        appService.sendPerformanceData(url, performanceData).enqueue(object : retrofit2.Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 Log.d("PerformanceMonitor", "Data sent successfully. Response code: ${response.code()}")
             }
@@ -93,8 +114,9 @@ object PerformanceMonitor {
             }
         })
 
-        Log.d("PerformanceMonitor", "sendPerformanceData: $json")
+        Log.d("PerformanceMonitor", "sendPerformanceData:  $performanceData")
     }
+
 
 
     //获取电池电量

@@ -41,12 +41,12 @@ dependencies {
    api ("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
     api ("androidx.viewpager2:viewpager2:1.1.0")
     api(libs.extension.okhttp)
-    implementation(libs.appcompat.v7)
+
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
    api(libs.androidx.recyclerview)
     testImplementation(libs.junit)
-    androidTestImplementation(libs.runner)
+    api(libs.runner)
     androidTestImplementation(libs.espresso.core)
     //异常上报使用的依赖
     implementation(libs.androidx.activity)
