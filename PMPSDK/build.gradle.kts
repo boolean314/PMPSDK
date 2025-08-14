@@ -57,6 +57,7 @@ dependencies {
     api("com.squareup.okhttp3:okhttp:4.11.0")
     api("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }
+
 publishing {
     publications {
         create<MavenPublication>("maven") {
