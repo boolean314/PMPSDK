@@ -103,15 +103,17 @@ MonitorSDK.reportError(throwable: Throwable, errorType: String = "manual_report"
 	"platform": "android",
 	"type": "performance",
 	"timestamp": "2025-08-09 16:36:20",
-    "data":{
-   		 "device_model": "sdk gphone64 x86 64",
-   		 "os_version": "Android 13",
-   		 "battery_level": "100%",
-   		 "memory_usage":{
+    "device_model": "sdk gphone64 x86 64",
+   	"os_version": "Android 13",
+   	"battery_level": "100%",
+   	"memory_usage":{
     		"usedMemory": "6MB",
     		"totalMemory": "47MB"
 						},
-    "operation_fps": "btn:55.56639307648892'
+    "operation_id":"btn"
+    "operation_fps": 55
+    "api_name":"https://httpbin.org/anything"
+    "api_time":16
 			}
 }
 ```
