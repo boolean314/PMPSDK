@@ -35,20 +35,24 @@ object PerformanceMonitor {
     private var frameLongCount = 0
     private var frameCallback: Choreographer.FrameCallback? = null
     private var frameLongCallback: Choreographer.FrameCallback? = null
-    private var operationFps = 0.0
+    private var operationFps = 0L
     private var isMonitoring = false
     private var isLongMonitoring = false
     private val model = Build.MODEL
     private val OS = Build.VERSION.RELEASE
-    private var projectId = "123"//需要初始化，暂时赋值为123
+    private  lateinit var projectId: String
     private lateinit var viewResourceId: String
     private  var isMonitor:Boolean=true
-    private  var url:String=""
+    private  val url:String="http://47.113.224.195:30422/api/mobile/performance"
     private lateinit var appService: SdkService
-    fun initPerformanceMonitor(projectId: String, url: String,isMonitor: Boolean=true) {
+    private var apiTime=0L
+    private  var apiName: String?=null
+
+
+
+    fun initPerformanceMonitor(projectId: String, isMonitor: Boolean=true) {
         if(isMonitor){
             this.projectId = projectId
-            this.url=url
             val retrofit=Retrofit.Builder()
                 .baseUrl("https://httpbin.org/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -61,6 +65,8 @@ object PerformanceMonitor {
 
 
     }
+
+
     // 性能数据主类
     data class PerformanceData(
         val project_id: String,
@@ -71,8 +77,14 @@ object PerformanceMonitor {
         val os_version: String,
         val battery_level: String,
         val memory_usage: MemoryUsage,
-        val operation_fps: String
+        val operation_id: String,//把id从operation_fps中分离出来
+        val operation_fps: Long,//本来是String，现在改为Long
+        val api_name: String?,//新增api字段
+        val api_time: Long//新增api请求用时，单位是ms
     )
+
+    // 性能详细信息
+
 
     // 内存使用信息
     data class MemoryUsage(
@@ -80,8 +92,7 @@ object PerformanceMonitor {
         val totalMemory: String
     )
 
-
-    fun sendPerformanceData(context: Context) {
+    private fun sendPerformanceData(context: Context) {
         if (!isMonitor){
             return
         }
@@ -96,12 +107,15 @@ object PerformanceMonitor {
             project_id = projectId,
             platform = "android",
             type = "performance",
-            timestamp =  SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+            timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
             device_model = model,
             os_version = "Android $OS",
             battery_level = "${getBatteryLevel(context)}%",
             memory_usage = memoryInfo,
-            operation_fps = "${viewResourceId}:$operationFps"
+            operation_id = viewResourceId,
+            operation_fps = operationFps,
+            api_name = apiName,
+            api_time = apiTime
         )
         // 异步执行网络请求
         appService.sendPerformanceData(url, performanceData).enqueue(object : retrofit2.Callback<ResponseBody> {
@@ -116,7 +130,6 @@ object PerformanceMonitor {
 
         Log.d("PerformanceMonitor", "sendPerformanceData:  $performanceData")
     }
-
 
 
     //获取电池电量
@@ -220,8 +233,8 @@ object PerformanceMonitor {
         val durationNanos = System.nanoTime() - lastFrameTimeNanos
         val durationSeconds = durationNanos / 1_000_000_000.0
         operationFps = if (durationSeconds > 0) {
-            frameCount / durationSeconds
-        } else 0.0
+            (frameCount / durationSeconds).toLong()
+        } else 0L
         viewResourceId = getViewIdentifier(view)
         sendPerformanceData(view.context)
     }
@@ -245,8 +258,8 @@ object PerformanceMonitor {
         val durationNanos = System.nanoTime() - lastFrameLongTimeNanos
         val durationSeconds = durationNanos / 1_000_000_000.0
         operationFps = if (durationSeconds > 0) {
-            frameLongCount / durationSeconds
-        } else 0.0
+            ( frameLongCount/ durationSeconds).toLong()
+        } else 0L
 
 
         if (activityName==null){
@@ -437,6 +450,54 @@ object PerformanceMonitor {
          // 其他初始化代码...
          setupViews()
      }*/
-    
+//监控api请求用时
+    suspend fun <T> monitorSuspendApiCall(apiName: String,context: Context, call: suspend () -> T):T {
+        val startTime = System.currentTimeMillis()
+        try {
+            val result = call()
+            val endTime = System.currentTimeMillis()
+            val duration = endTime - startTime
+            if (!isMonitor){
+                return result
+            }
+            val memoryInfo = MemoryUsage(
+                usedMemory = "${getMemoryInfo().usedMemory}MB",
+                totalMemory = "${getMemoryInfo().totalMemory}MB"
+            )
+            val performanceData = PerformanceData(
+                project_id = projectId,
+                platform = "android",
+                type = "performance",
+                timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+                device_model = model,
+                os_version = "Android $OS",
+                battery_level = "${getBatteryLevel(context)}%",
+                memory_usage = memoryInfo,
+                operation_id = null.toString(),
+                operation_fps = 0,
+                api_name = apiName,
+                api_time = duration
+            )
+            // 异步执行网络请求
+            appService.sendPerformanceData(url, performanceData).enqueue(object : retrofit2.Callback<ResponseBody> {
+                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                    Log.d("PerformanceMonitor", "Data sent successfully. Response code: ${response.code()}")
+                }
 
+                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    Log.e("PerformanceMonitor", "Failed to send data", t)
+                }
+            })
+
+            Log.d("PerformanceMonitor", "sendPerformanceData:  $performanceData")
+            Log.d("PerformanceMonitor", "API $apiName took ${duration}ms")
+            // 可以在这里调用 sendPerformanceData 发送数据
+            return result
+        } catch (e: Exception) {
+            val endTime = System.currentTimeMillis()
+            val duration = endTime - startTime
+            Log.d("PerformanceMonitor", "API $apiName failed after ${duration}ms")
+            throw e
+        }
+    }
 }

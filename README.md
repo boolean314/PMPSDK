@@ -9,7 +9,7 @@
 * 使用前在请在Module级的build.gradle.kts文件下导入依赖
 
 ```kotlin
-implementation("com,github.boolean314:PMPSDK:v1.1.0")
+implementation("com,github.boolean314:PMPSDK:v2.0.0")//记得填入最新的release版本号
 ```
 
 * 在settings.gradle.kts文件中添加链接
@@ -22,6 +22,12 @@ dependencyResolutionManagement {
         }
     ...
 }
+```
+
+* 在gradle.properties文件中添加
+
+```kotlin
+android.enableJetifier=true
 ```
 
 **祝你使用愉快~**
@@ -41,7 +47,7 @@ dependencyResolutionManagement {
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        MonitorSDK.initA(this, "PROJ-123", "https://monitor.yourplatform.com/api")	//注意不要输入多的空格哦
+        MonitorSDK.initA(this, "PROJ-123")	//注意不要输入多的空格哦
         MonitorSDK.enable() //启用SDK
     }
 }
@@ -53,7 +59,8 @@ class MyApplication : Application() {
 {
       "projectId": "PROJ-XXXXXX",
       "platform": "android",
-      "timestamp": 1620000000000,
+      "timestamp": "2025-08-09 16:36:20",
+      "type": "error",
       "message": "error message",
       "stack": "at com.example.Service.run(Service.java:42)...",
       "className": "java.lang.NullPointerException",
@@ -64,7 +71,7 @@ class MyApplication : Application() {
 ### API 参考
 
 ```kotlin
-MonitorSDK.initA(context: Context, projectId: String, apiUrl: String)    //初始化SDK
+MonitorSDK.initA(context: Context, projectId: String)    //初始化SDK
 MonitorSDK.enable()   //启用SDK
 MonitorSDK.disable()    //禁用SDK
 MonitorSDK.reportError(throwable: Throwable, errorType: String = "manual_report")   //手动上报异常
@@ -86,24 +93,25 @@ MonitorSDK.reportError(throwable: Throwable, errorType: String = "manual_report"
 | **wrapPageChangeListener**(viewPager: ViewPager2)            | 监测页面跳转的性能           |
 | **wrapFragmentLifecycleCallbacks**(fragment: androidx.fragment.app.Fragment) | 监测碎片创建到销毁时的性能   |
 | **wrapActivityLifecycleCallbacks**(activity: AppCompatActivity） | 监测活动从创建到销毁时的性能 |
+| <T> **monitorSuspendApiCall**(apiName: String,context: Context, call: suspend () -> T):T | 监控api请求用时              |
 
 ### 性能数据JSON示例
 
 ```json
 {
-	"project id":"PROJ-XXXXXX",
-	"platform":"android",
-	"type":"performance",
-	"timestamp": 1620000000000,
+	"project id": "PROJ-XXXXXX",
+	"platform": "android",
+	"type": "performance",
+	"timestamp": "2025-08-09 16:36:20",
     "data":{
-   		 "device_model":"sdk gphone64 x86 64",
-   		 "os_version":"Android 13",
-   		 "battery_level":"100%",
+   		 "device_model": "sdk gphone64 x86 64",
+   		 "os_version": "Android 13",
+   		 "battery_level": "100%",
    		 "memory_usage":{
-    		"usedMemory":"6MB",
-    		"totalMemory":"47MB"
+    		"usedMemory": "6MB",
+    		"totalMemory": "47MB"
 						},
-    "operation_fps":"btn:55.56639307648892'
+    "operation_fps": "btn:55.56639307648892'
 			}
 }
 ```
@@ -117,7 +125,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ...
-        PerformanceMonitor.initPerformanceMonitor("PROJ-123","https://monitor.yourplatform.com/api")//如果要关闭监控功能，再传入第三个参数为false
+        PerformanceMonitor.initPerformanceMonitor("PROJ-123")//如果要关闭监控功能，再传入第三个参数为false
         ...
         }
 ```
@@ -217,4 +225,19 @@ class MainActivity : AppCompatActivity() {
      // 其他初始化代码...
  }
  }
+```
+
+
+
+* <T> **monitorSuspendApiCall**(apiName: String,context: Context, call: suspend () -> T):T
+
+```kotlin
+lifecycleScope.launch {
+    PerformanceMonitor.monitorSuspendApiCall(
+        "https://httpbin.org/anything",//你要监控的api接口
+        this@MainActivity,
+        {
+            apiService.sendMessage("https://httpbin.org/anything", "113")//执行你的发送方法
+        })
+}
 ```

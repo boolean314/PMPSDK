@@ -21,8 +21,8 @@ object MonitorSDK {
     private var originalUncaughtExceptionHandler: Thread.UncaughtExceptionHandler? = null
     private val hasExceptionOccurred = AtomicBoolean(false)
 
-    fun initA(context: Context, projectId: String, apiUrl: String) {
-        val defaultConfig = SDKConfig.createDefault(projectId, apiUrl)
+    fun initA(context: Context, projectId: String) {
+        val defaultConfig = SDKConfig.createDefault(projectId, "http://47.113.224.195:30422/api/mobile/error")
         initB(context, defaultConfig)
     }
 
